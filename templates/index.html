@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NeuroScan AI</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0a0a0f;
+    color: white;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 40px;
+    text-align: center;
+}
+
+h1 {
+    color: #6c63ff;
+}
+
+.upload-box {
+    border: 2px dashed #444;
+    padding: 30px;
+    margin: 20px 0;
+}
+
+button {
+    background: linear-gradient(135deg, #6c63ff, #00d4b4);
+    border: none;
+    padding: 12px 25px;
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+img {
+    margin-top: 20px;
+    width: 250px;
+    border-radius: 10px;
+}
+
+.result {
+    margin-top: 20px;
+    font-size: 22px;
+}
+
+.bar {
+    height: 10px;
+    background: #222;
+    margin: 5px 0;
+    border-radius: 5px;
+}
+
+.fill {
+    height: 10px;
+    background: #6c63ff;
+    border-radius: 5px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🧠 NeuroScan AI</h1>
+
+<div class="upload-box">
+    <input type="file" id="fileInput"><br><br>
+    <button onclick="uploadImage()">Run Analysis</button>
+</div>
+
+<div id="preview"></div>
+
+<div id="result" class="result"></div>
+
+<div id="bars"></div>
+
+</div>
+
+<script>
+const classNames = ['glioma','meningioma','notumor','pituitary'];
+
+function uploadImage() {
+    let file = document.getElementById("fileInput").files[0];
+
+    if (!file) {
+        alert("Select image first");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    document.getElementById("result").innerHTML = "Analyzing...";
+
+    fetch("/predict", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        // Image preview
+        document.getElementById("preview").innerHTML =
+            `<img src="/static/uploads/${data.image}">`;
+
+        // Result
+        document.getElementById("result").innerHTML =
+            `Prediction: <b>${data.prediction}</b><br>
+             Confidence: ${data.confidence.toFixed(2)}%`;
+
+        // Probability bars
+        let barsHTML = "";
+        data.probs.forEach((p, i) => {
+            barsHTML += `
+                <div>${classNames[i]} (${(p*100).toFixed(1)}%)</div>
+                <div class="bar">
+                    <div class="fill" style="width:${p*100}%"></div>
+                </div>
+            `;
+        });
+
+        document.getElementById("bars").innerHTML = barsHTML;
+
+    })
+    .catch(err => {
+        console.error(err);
+        document.getElementById("result").innerHTML = "Error";
+    });
+}
+</script>
+
+</body>
+</html>
